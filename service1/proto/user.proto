@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/Uranury/exploreMicro/service1/proto/pb";
+
+// The service definition
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc UpdateBalance(UpdateBalanceRequest) returns (UpdateBalanceResponse);
+}
+
+// Request/response messages
+message GetUserRequest {
+  uint32 user_id = 1;
+}
+
+message GetUserResponse {
+  uint32 id = 1;
+  string name = 2;
+  double balance = 3;
+  uint32 age = 4;
+}
+
+message UpdateBalanceRequest {
+  uint32 user_id = 1;
+  double new_balance = 2;
+}
+
+message UpdateBalanceResponse {
+  uint32 id = 1;
+  string name = 2;
+  double balance = 3;
+  uint32 age = 4;
+}

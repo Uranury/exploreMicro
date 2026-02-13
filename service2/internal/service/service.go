@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/Uranury/exploreMicro/service2/internal/http_pack"
+	pb "github.com/Uranury/exploreMicro/service1/proto/pb"
 	"github.com/Uranury/exploreMicro/service2/internal/models"
 	"github.com/Uranury/exploreMicro/service2/internal/storage"
 	"sync/atomic"
@@ -18,27 +18,27 @@ type Service interface {
 
 type service struct {
 	store  storage.Store
-	client http_pack.UserClient
+	client pb.UserServiceClient
 	nextID atomic.Uint64
 }
 
-func NewService(store storage.Store, client http_pack.UserClient) Service {
+func NewService(store storage.Store, userClient pb.UserServiceClient) Service {
 	return &service{
 		store:  store,
-		client: client,
+		client: userClient,
 	}
 }
 
 func (s *service) CreateOrder(ctx context.Context, userID uint, item string, price float64) (*models.Order, error) {
 	id := uint(s.nextID.Add(1))
-	user, err := s.client.Get(ctx, userID)
+	userResp, err := s.client.GetUser(ctx, &pb.GetUserRequest{UserId: uint32(userID)})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
-	if user.Balance < price {
+	if userResp.Balance < price {
 		return nil, fmt.Errorf("insufficient balance")
 	}
-	user, err = s.client.Patch(ctx, userID, user.Balance-price)
+	updatedUser, err := s.client.UpdateBalance(ctx, &pb.UpdateBalanceRequest{UserId: uint32(userID), NewBalance: userResp.Balance - price})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
@@ -47,7 +47,12 @@ func (s *service) CreateOrder(ctx context.Context, userID uint, item string, pri
 		UserID: userID,
 		Item:   item,
 		Price:  price,
-		User:   user,
+		User: &models.User{
+			ID:      uint(updatedUser.Id),
+			Name:    updatedUser.Name,
+			Age:     uint(updatedUser.Age),
+			Balance: updatedUser.Balance,
+		},
 	}
 	s.store.Save(&ord)
 	return &ord, nil
@@ -70,11 +75,11 @@ func (s *service) CancelOrder(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	user, err := s.client.Get(ctx, ord.UserID)
+	user, err := s.client.GetUser(ctx, &pb.GetUserRequest{UserId: uint32(ord.UserID)})
 	if err != nil {
 		return fmt.Errorf("failed to get user: %w", err)
 	}
-	_, err = s.client.Patch(ctx, ord.UserID, user.Balance+ord.Price)
+	_, err = s.client.UpdateBalance(ctx, &pb.UpdateBalanceRequest{UserId: uint32(ord.UserID), NewBalance: user.Balance + ord.Price})
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}

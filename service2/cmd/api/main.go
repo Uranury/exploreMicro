@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 	"os"
@@ -9,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	pb "github.com/Uranury/exploreMicro/service1/proto/pb"
 	"github.com/Uranury/exploreMicro/service2/internal/handlers"
-	"github.com/Uranury/exploreMicro/service2/internal/http_pack"
 	"github.com/Uranury/exploreMicro/service2/internal/service"
 	"github.com/Uranury/exploreMicro/service2/internal/storage"
 )
@@ -18,13 +20,13 @@ import (
 func main() {
 	store := storage.NewStore()
 
-	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to user service: %v", err)
 	}
+	defer conn.Close()
 
-	userServiceURL := getEnv("USER_SERVICE_URL", "http://localhost:8080")
-	userClient := http_pack.NewHTTPUserClient(userServiceURL, httpClient)
-
+	userClient := pb.NewUserServiceClient(conn)
 	svc := service.NewService(store, userClient)
 
 	handler := handlers.NewOrderHandler(svc)
