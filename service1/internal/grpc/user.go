@@ -2,26 +2,26 @@ package grpc
 
 import (
 	"context"
-	"github.com/Uranury/exploreMicro/service1/internal/storage"
+	"github.com/Uranury/exploreMicro/service1/internal/service"
 	"github.com/Uranury/exploreMicro/service1/proto/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type userService struct {
+type userHandler struct {
 	pb.UnimplementedUserServiceServer
-	store storage.Store
+	svc service.User
 }
 
-func NewUserService(store storage.Store) pb.UserServiceServer {
-	return &userService{
-		store: store,
+func NewUserService(svc service.User) pb.UserServiceServer {
+	return &userHandler{
+		svc: svc,
 	}
 }
 
-func (s *userService) GetUser(_ context.Context, request *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	user, exists := s.store.Get(uint(request.UserId))
-	if !exists {
+func (s *userHandler) GetUser(ctx context.Context, request *pb.GetUserRequest) (*pb.GetUserResponse, error) {
+	user, err := s.svc.GetUser(ctx, uint(request.UserId))
+	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "user not found")
 	}
 
@@ -33,15 +33,11 @@ func (s *userService) GetUser(_ context.Context, request *pb.GetUserRequest) (*p
 	}, nil
 }
 
-func (s *userService) UpdateBalance(_ context.Context, request *pb.UpdateBalanceRequest) (*pb.UpdateBalanceResponse, error) {
-	user, exists := s.store.Get(uint(request.UserId))
-	if !exists {
-		return nil, status.Errorf(codes.NotFound, "user not found")
+func (s *userHandler) UpdateBalance(ctx context.Context, request *pb.UpdateBalanceRequest) (*pb.UpdateBalanceResponse, error) {
+	user, err := s.svc.UpdateBalance(ctx, uint(request.UserId), request.NewBalance)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update balance")
 	}
-
-	user.Balance = request.NewBalance
-	s.store.Save(user)
-
 	return &pb.UpdateBalanceResponse{
 		Id:      uint32(user.ID),
 		Name:    user.Name,

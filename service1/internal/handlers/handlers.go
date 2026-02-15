@@ -54,6 +54,11 @@ func (h *User) GetUsers(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(result)
 }
 
+type UpdateRequest struct {
+	Name *string `json:"name,omitempty"`
+	Age  *uint   `json:"age,omitempty"`
+}
+
 func (h *User) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
