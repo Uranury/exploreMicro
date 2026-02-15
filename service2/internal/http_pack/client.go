@@ -9,6 +9,8 @@ import (
 	"net/http"
 )
 
+// FIXME: this is deprecated, we swapped to grpc.
+
 type UserClient interface {
 	Get(ctx context.Context, userID uint) (*models.User, error)
 	Patch(ctx context.Context, userID uint, newBalance float64) (*models.User, error)

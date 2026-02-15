@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	pb "github.com/Uranury/exploreMicro/service1/proto/pb"
+	"github.com/Uranury/exploreMicro/service1/proto/pb"
 	"github.com/Uranury/exploreMicro/service2/internal/models"
 	"github.com/Uranury/exploreMicro/service2/internal/storage"
 	"sync/atomic"
